@@ -1,8 +1,5 @@
 use crate::dimensional_being::DimensionalBeing;
-use crate::{
-    Cellular2Settings, CellularSettings, FbmSettings, GradientSettings, NoiseType, RidgeSettings,
-    Settings, TurbulenceSettings,
-};
+use crate::Settings;
 
 use simdeez::prelude::*;
 
@@ -16,7 +13,7 @@ pub trait Sample32<S: Simd>: DimensionalBeing + Settings {
 }
 
 #[inline(always)]
-unsafe fn get_1d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
+pub unsafe fn get_1d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     settings: Settings,
 ) -> (Vec<f32>, f32, f32) {
     let dim = settings.get_dimensions();
@@ -77,7 +74,7 @@ unsafe fn get_1d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
 }
 
 #[inline(always)]
-unsafe fn get_2d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
+pub unsafe fn get_2d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     settings: Settings,
 ) -> (Vec<f32>, f32, f32) {
     let dim = settings.get_dimensions();
@@ -300,72 +297,186 @@ unsafe fn get_4d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     (result, min, max)
 }
 
-#[inline(always)]
-#[allow(dead_code)]
-pub unsafe fn get_1d_noise<S: Simd>(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
-    match noise_type {
-        NoiseType::Fbm(s) => get_1d_noise_helper_f32::<S, FbmSettings>(*s),
-        NoiseType::Ridge(s) => get_1d_noise_helper_f32::<S, RidgeSettings>(*s),
-        NoiseType::Turbulence(s) => get_1d_noise_helper_f32::<S, TurbulenceSettings>(*s),
-        NoiseType::Gradient(s) => get_1d_noise_helper_f32::<S, GradientSettings>(*s),
-        NoiseType::Cellular(_) => {
-            panic!("not implemented");
+macro_rules! generate_noise_helper_dispatch {
+    ($helper_name:ident, $settings_ty:ty, $settings_name:ident) => {{
+        #[allow(non_camel_case_types)]
+        {
+            use simdeez::prelude::*;
+            simd_runtime_generate!(
+                fn gen_noise($settings_name: &$settings_ty) -> (Vec<f32>, f32, f32) {
+                    $helper_name::<S, $settings_ty>(*$settings_name)
+                }
+            );
+            gen_noise($settings_name)
         }
-        NoiseType::Cellular2(_) => {
-            panic!("not implemented");
+    }};
+}
+
+pub mod get_1d_noise {
+    use crate::{noise_helpers_32::get_1d_noise_helper_f32, NoiseType};
+    use crate::{FbmSettings, GradientSettings, RidgeSettings, TurbulenceSettings};
+    #[allow(dead_code)]
+    pub fn get_1d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+        match noise_type {
+            NoiseType::Fbm(s) => {
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, FbmSettings, s)
+            }
+            NoiseType::Ridge(s) => {
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, RidgeSettings, s)
+            }
+            NoiseType::Turbulence(s) => {
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, TurbulenceSettings, s)
+            }
+            NoiseType::Gradient(s) => {
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, GradientSettings, s)
+            }
+            NoiseType::Cellular(_) => {
+                panic!("not implemented");
+            }
+            NoiseType::Cellular2(_) => {
+                panic!("not implemented");
+            }
         }
     }
 }
 
-/// Gets a width X height sized block of 2d noise, unscaled.
-/// `start_x` and `start_y` can be used to provide an offset in the
-/// coordinates. Results are unscaled, 'min' and 'max' noise values
-/// are returned so you can scale and transform the noise as you see fit
-/// in a single pass.
-#[inline(always)]
-#[allow(dead_code)]
-pub unsafe fn get_2d_noise<S: Simd>(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
-    match noise_type {
-        NoiseType::Fbm(s) => get_2d_noise_helper_f32::<S, FbmSettings>(*s),
-        NoiseType::Ridge(s) => get_2d_noise_helper_f32::<S, RidgeSettings>(*s),
-        NoiseType::Turbulence(s) => get_2d_noise_helper_f32::<S, TurbulenceSettings>(*s),
-        NoiseType::Gradient(s) => get_2d_noise_helper_f32::<S, GradientSettings>(*s),
-        NoiseType::Cellular(s) => get_2d_noise_helper_f32::<S, CellularSettings>(*s),
-        NoiseType::Cellular2(s) => get_2d_noise_helper_f32::<S, Cellular2Settings>(*s),
+pub mod get_1d_scaled_noise {
+    use crate::shared::get_scaled_noise;
+    use crate::NoiseType;
+    use super::get_1d_noise::get_1d_noise;
+    #[allow(dead_code)]
+    pub fn get_1d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
+        unsafe { get_scaled_noise(*noise_type, get_1d_noise(noise_type)) }
     }
 }
 
-/// Gets a width X height X depth sized block of 3d noise, unscaled,
-/// `start_x`,`start_y` and `start_z` can be used to provide an offset in the
-/// coordinates. Results are unscaled, 'min' and 'max' noise values
-/// are returned so you can scale and transform the noise as you see fit
-/// in a single pass.
-#[inline(always)]
-#[allow(dead_code)]
-pub unsafe fn get_3d_noise<S: Simd>(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
-    match noise_type {
-        NoiseType::Fbm(s) => get_3d_noise_helper_f32::<S, FbmSettings>(*s),
-        NoiseType::Ridge(s) => get_3d_noise_helper_f32::<S, RidgeSettings>(*s),
-        NoiseType::Turbulence(s) => get_3d_noise_helper_f32::<S, TurbulenceSettings>(*s),
-        NoiseType::Gradient(s) => get_3d_noise_helper_f32::<S, GradientSettings>(*s),
-        NoiseType::Cellular(s) => get_3d_noise_helper_f32::<S, CellularSettings>(*s),
-        NoiseType::Cellular2(s) => get_3d_noise_helper_f32::<S, Cellular2Settings>(*s),
+pub mod get_2d_noise {
+    use crate::{noise_helpers_32::get_2d_noise_helper_f32, NoiseType};
+    use crate::{
+        Cellular2Settings, CellularSettings, FbmSettings, GradientSettings, RidgeSettings,
+        TurbulenceSettings,
+    };
+    /// Gets a width X height sized block of 2d noise, unscaled.
+    /// `start_x` and `start_y` can be used to provide an offset in the
+    /// coordinates. Results are unscaled, 'min' and 'max' noise values
+    /// are returned so you can scale and transform the noise as you see fit
+    /// in a single pass.
+    #[allow(dead_code)]
+    pub fn get_2d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+        match noise_type {
+            NoiseType::Fbm(s) => {
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, FbmSettings, s)
+            }
+            NoiseType::Ridge(s) => {
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, RidgeSettings, s)
+            }
+            NoiseType::Turbulence(s) => {
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, TurbulenceSettings, s)
+            }
+            NoiseType::Gradient(s) => {
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, GradientSettings, s)
+            }
+            NoiseType::Cellular(s) => {
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, CellularSettings, s)
+            }
+            NoiseType::Cellular2(s) => {
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, Cellular2Settings, s)
+            }
+        }
     }
 }
 
-#[inline(always)]
-#[allow(dead_code)]
-pub unsafe fn get_4d_noise<S: Simd>(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
-    match noise_type {
-        NoiseType::Fbm(s) => get_4d_noise_helper_f32::<S, FbmSettings>(*s),
-        NoiseType::Ridge(s) => get_4d_noise_helper_f32::<S, RidgeSettings>(*s),
-        NoiseType::Turbulence(s) => get_4d_noise_helper_f32::<S, TurbulenceSettings>(*s),
-        NoiseType::Gradient(s) => get_4d_noise_helper_f32::<S, GradientSettings>(*s),
-        NoiseType::Cellular(_) => {
-            panic!("not implemented");
+pub mod get_2d_scaled_noise {
+    use crate::shared::get_scaled_noise;
+    use crate::NoiseType;
+    use super::get_2d_noise::get_2d_noise;
+
+    #[allow(dead_code)]
+    pub fn get_2d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
+        unsafe { get_scaled_noise(*noise_type, get_2d_noise(noise_type)) }
+    }
+}
+
+pub mod get_3d_noise {
+    use crate::{noise_helpers_32::get_3d_noise_helper_f32, NoiseType};
+    use crate::{
+        Cellular2Settings, CellularSettings, FbmSettings, GradientSettings, RidgeSettings,
+        TurbulenceSettings,
+    };
+    /// Gets a width X height X depth sized block of 3d noise, unscaled,
+    /// `start_x`,`start_y` and `start_z` can be used to provide an offset in the
+    /// coordinates. Results are unscaled, 'min' and 'max' noise values
+    /// are returned so you can scale and transform the noise as you see fit
+    /// in a single pass.
+    #[allow(dead_code)]
+    pub fn get_3d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+        match noise_type {
+            NoiseType::Fbm(s) => {
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, FbmSettings, s)
+            }
+            NoiseType::Ridge(s) => {
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, RidgeSettings, s)
+            }
+            NoiseType::Turbulence(s) => {
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, TurbulenceSettings, s)
+            }
+            NoiseType::Gradient(s) => {
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, GradientSettings, s)
+            }
+            NoiseType::Cellular(s) => {
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, CellularSettings, s)
+            }
+            NoiseType::Cellular2(s) => {
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, Cellular2Settings, s)
+            }
         }
-        NoiseType::Cellular2(_) => {
-            panic!("not implemented");
+    }
+}
+
+pub mod get_3d_scaled_noise {
+    use crate::shared::get_scaled_noise;
+    use crate::NoiseType;
+    use super::get_3d_noise::get_3d_noise;
+    #[allow(dead_code)]
+    pub fn get_3d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
+        unsafe { get_scaled_noise(*noise_type, get_3d_noise(noise_type)) }
+    }
+}
+
+pub mod get_4d_noise {
+    use crate::{noise_helpers_32::get_4d_noise_helper_f32, NoiseType};
+    use crate::{FbmSettings, GradientSettings, RidgeSettings, TurbulenceSettings};
+    #[allow(dead_code)]
+    pub fn get_4d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+        match noise_type {
+            NoiseType::Fbm(s) => {
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, FbmSettings, s)
+            }
+            NoiseType::Ridge(s) => {
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, RidgeSettings, s)
+            }
+            NoiseType::Turbulence(s) => {
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, TurbulenceSettings, s)
+            }
+            NoiseType::Gradient(s) => {
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, GradientSettings, s)
+            }
+            NoiseType::Cellular(_) => {
+                panic!("not implemented");
+            }
+            NoiseType::Cellular2(_) => {
+                panic!("not implemented");
+            }
         }
+    }
+}
+
+pub mod get_4d_scaled_noise {
+    use crate::shared::get_scaled_noise;
+    use crate::NoiseType;
+    use super::get_4d_noise::get_4d_noise;
+    #[allow(dead_code)]
+    pub fn get_4d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
+        unsafe { get_scaled_noise(*noise_type, get_4d_noise(noise_type)) }
     }
 }
