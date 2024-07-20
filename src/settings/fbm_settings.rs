@@ -1,7 +1,9 @@
+use std::mem::MaybeUninit;
+
 use simdeez::prelude::*;
 
 use crate::dimensional_being::DimensionalBeing;
-use crate::{get_1d_noise, get_1d_scaled_noise, get_2d_noise, get_2d_scaled_noise, get_3d_noise, get_3d_scaled_noise, get_4d_noise, get_4d_scaled_noise};
+use crate::{get_1d_noise, get_2d_noise, get_3d_noise, get_4d_noise};
 use crate::noise::fbm_32::{fbm_1d, fbm_2d, fbm_3d, fbm_4d};
 use crate::noise::fbm_64::{
     fbm_1d as fbm_1d_f64, fbm_2d as fbm_2d_f64, fbm_3d as fbm_3d_f64, fbm_4d as fbm_4d_f64,
@@ -109,27 +111,13 @@ impl Settings for FbmSettings {
         //todo
     }
 
-    fn generate(self) -> (Vec<f32>, f32, f32) {
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
         let d = self.dim.dim;
         match d {
-            1 => get_1d_noise(&NoiseType::Fbm(self)),
-            2 => get_2d_noise(&NoiseType::Fbm(self)),
-            3 => get_3d_noise(&NoiseType::Fbm(self)),
-            4 => get_4d_noise(&NoiseType::Fbm(self)),
-            _ => panic!("not implemented"),
-        }
-    }
-
-    fn generate_scaled(self, min: f32, max: f32) -> Vec<f32> {
-        let d = self.dim.dim;
-        let mut new_self = self;
-        new_self.dim.min = min;
-        new_self.dim.max = max;
-        match d {
-            1 => get_1d_scaled_noise(&NoiseType::Fbm(new_self)),
-            2 => get_2d_scaled_noise(&NoiseType::Fbm(new_self)),
-            3 => get_3d_scaled_noise(&NoiseType::Fbm(new_self)),
-            4 => get_4d_scaled_noise(&NoiseType::Fbm(new_self)),
+            1 => get_1d_noise(&NoiseType::Fbm(self), result),
+            2 => get_2d_noise(&NoiseType::Fbm(self), result),
+            3 => get_3d_noise(&NoiseType::Fbm(self), result),
+            4 => get_4d_noise(&NoiseType::Fbm(self), result),
             _ => panic!("not implemented"),
         }
     }

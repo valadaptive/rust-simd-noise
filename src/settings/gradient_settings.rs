@@ -1,7 +1,9 @@
+use std::mem::MaybeUninit;
+
 use simdeez::prelude::*;
 
 use crate::dimensional_being::DimensionalBeing;
-use crate::{get_1d_noise, get_1d_scaled_noise, get_2d_noise, get_2d_scaled_noise, get_3d_noise, get_3d_scaled_noise, get_4d_noise, get_4d_scaled_noise};
+use crate::{get_1d_noise, get_2d_noise, get_3d_noise, get_4d_noise};
 use crate::noise::simplex_32::{simplex_1d, simplex_2d, simplex_3d, simplex_4d};
 use crate::noise::simplex_64::{
     simplex_1d as simplex_1d_f64, simplex_2d as simplex_2d_f64, simplex_3d as simplex_3d_f64,
@@ -104,27 +106,13 @@ impl Settings for GradientSettings {
         //todo
     }
 
-    fn generate(self) -> (Vec<f32>, f32, f32) {
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32) where Self: Sized {
         let d = self.dim.dim;
         match d {
-            1 => get_1d_noise(&NoiseType::Gradient(self)),
-            2 => get_2d_noise(&NoiseType::Gradient(self)),
-            3 => get_3d_noise(&NoiseType::Gradient(self)),
-            4 => get_4d_noise(&NoiseType::Gradient(self)),
-            _ => panic!("not implemented"),
-        }
-    }
-
-    fn generate_scaled(self, min: f32, max: f32) -> Vec<f32> {
-        let d = self.dim.dim;
-        let mut new_self = self;
-        new_self.dim.min = min;
-        new_self.dim.max = max;
-        match d {
-            1 => get_1d_scaled_noise(&NoiseType::Gradient(new_self)),
-            2 => get_2d_scaled_noise(&NoiseType::Gradient(new_self)),
-            3 => get_3d_scaled_noise(&NoiseType::Gradient(new_self)),
-            4 => get_4d_scaled_noise(&NoiseType::Gradient(new_self)),
+            1 => get_1d_noise(&NoiseType::Gradient(self), result),
+            2 => get_2d_noise(&NoiseType::Gradient(self), result),
+            3 => get_3d_noise(&NoiseType::Gradient(self), result),
+            4 => get_4d_noise(&NoiseType::Gradient(self), result),
             _ => panic!("not implemented"),
         }
     }

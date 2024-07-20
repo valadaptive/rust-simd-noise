@@ -1,6 +1,8 @@
+use std::mem::MaybeUninit;
+
 use simdeez::prelude::*;
 
-use crate::{dimensional_being::DimensionalBeing, NoiseDimensions};
+use crate::NoiseDimensions;
 
 #[inline(always)]
 pub unsafe fn scale_noise<S: Simd>(
@@ -39,9 +41,14 @@ simd_runtime_generate!(
     }
 );
 
-pub(crate) unsafe fn get_scaled_noise<D: DimensionalBeing>(
-    settings: D,
+pub(crate) fn get_scaled_noise(
+    dimensions: NoiseDimensions,
     noise: (Vec<f32>, f32, f32),
 ) -> Vec<f32> {
-    get_scaled_noise_inner(settings.get_dimensions(), noise)
+    get_scaled_noise_inner(dimensions, noise)
+}
+
+pub(crate) fn slice_to_maybe_uninit_mut<T>(slice: &mut [T]) -> &mut [MaybeUninit<T>] {
+    // Safety: we know these are all initialized, so it's fine to transmute into a type that makes fewer assumptions
+    unsafe { std::mem::transmute(slice) }
 }

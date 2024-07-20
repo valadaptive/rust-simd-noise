@@ -87,7 +87,7 @@
 
 extern crate simdeez;
 mod dimensional_being;
-pub mod intrinsics;
+//pub mod intrinsics;
 pub mod noise;
 mod noise_builder;
 mod noise_dimensions;
@@ -95,9 +95,6 @@ mod noise_helpers_32;
 mod noise_helpers_64;
 mod noise_type;
 mod shared;
-
-use shared::get_scaled_noise;
-use simdeez::prelude::*;
 
 use dimensional_being::DimensionalBeing;
 pub use noise::cell2_return_type::Cell2ReturnType;
@@ -108,10 +105,10 @@ pub use noise_dimensions::NoiseDimensions;
 pub use noise_type::NoiseType;
 
 pub use noise_helpers_32::{
-    get_1d_noise::get_1d_noise, get_1d_scaled_noise::get_1d_scaled_noise,
-    get_2d_noise::get_2d_noise, get_2d_scaled_noise::get_2d_scaled_noise,
-    get_3d_noise::get_3d_noise, get_3d_scaled_noise::get_3d_scaled_noise,
-    get_4d_noise::get_4d_noise, get_4d_scaled_noise::get_4d_scaled_noise,
+    get_1d_noise::get_1d_noise,
+    get_2d_noise::get_2d_noise,
+    get_3d_noise::get_3d_noise,
+    get_4d_noise::get_4d_noise,
 };
 
 mod settings;
