@@ -34,4 +34,18 @@ impl NoiseDimensions {
             seed: 1,
         }
     }
+
+    pub fn len(&self) -> usize {
+        let mut size = self.width;
+        if self.dim >= 2 {
+            size *= self.height;
+        }
+        if self.dim >= 3 {
+            size *= self.depth;
+        }
+        if self.dim >= 4 {
+            size *= self.time;
+        }
+        size
+    }
 }

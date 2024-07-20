@@ -4,6 +4,7 @@ use crate::Settings;
 use simdeez::prelude::*;
 
 use std::f32;
+use std::mem::MaybeUninit;
 
 pub trait Sample32<S: Simd>: DimensionalBeing + Settings {
     fn sample_1d(&self, x: S::Vf32) -> S::Vf32;
@@ -15,19 +16,20 @@ pub trait Sample32<S: Simd>: DimensionalBeing + Settings {
 #[inline(always)]
 pub unsafe fn get_1d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     settings: Settings,
-) -> (Vec<f32>, f32, f32) {
+    result: &mut [MaybeUninit<f32>],
+) -> (f32, f32) {
     let dim = settings.get_dimensions();
     let freq_x = S::Vf32::set1(settings.get_freq_x());
     let start_x = dim.x;
     let width = dim.width;
+    assert_eq!(result.len(), width);
     let mut min_s = S::Vf32::set1(f32::MAX);
     let mut max_s = S::Vf32::set1(f32::MIN);
 
     let mut min = f32::MAX;
     let mut max = f32::MIN;
 
-    let mut result = Vec::<f32>::with_capacity(width);
-    let result_ptr = result.as_mut_ptr();
+    let result_ptr = result.as_mut_ptr() as *mut f32;
     let mut i = 0;
     let vector_width = S::Vf32::WIDTH;
     let remainder = width % vector_width;
@@ -61,7 +63,6 @@ pub unsafe fn get_1d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
             i += 1;
         }
     }
-    result.set_len(width);
     for i in 0..vector_width {
         if min_s[i] < min {
             min = min_s[i];
@@ -70,13 +71,14 @@ pub unsafe fn get_1d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
             max = max_s[i];
         }
     }
-    (result, min, max)
+    (min, max)
 }
 
 #[inline(always)]
 pub unsafe fn get_2d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     settings: Settings,
-) -> (Vec<f32>, f32, f32) {
+    result: &mut [MaybeUninit<f32>],
+) -> (f32, f32) {
     let dim = settings.get_dimensions();
     let freq_x = S::Vf32::set1(settings.get_freq_x());
     let freq_y = S::Vf32::set1(settings.get_freq_y());
@@ -84,14 +86,14 @@ pub unsafe fn get_2d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     let width = dim.width;
     let start_y = dim.y;
     let height = dim.height;
+    assert_eq!(result.len(), width * height);
 
     let mut min_s = S::Vf32::set1(f32::MAX);
     let mut max_s = S::Vf32::set1(f32::MIN);
     let mut min = f32::MAX;
     let mut max = f32::MIN;
 
-    let mut result = Vec::<f32>::with_capacity(width * height);
-    let result_ptr = result.as_mut_ptr();
+    let result_ptr = result.as_mut_ptr() as *mut f32;
     let mut y = S::Vf32::set1(start_y);
     let mut i = 0;
     let vector_width = S::Vf32::WIDTH;
@@ -128,7 +130,6 @@ pub unsafe fn get_2d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
         }
         y = y + S::Vf32::set1(1.0);
     }
-    result.set_len(width * height);
     for i in 0..vector_width {
         if min_s[i] < min {
             min = min_s[i];
@@ -137,13 +138,14 @@ pub unsafe fn get_2d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
             max = max_s[i];
         }
     }
-    (result, min, max)
+    (min, max)
 }
 
 #[inline(always)]
 unsafe fn get_3d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     settings: Settings,
-) -> (Vec<f32>, f32, f32) {
+    result: &mut [MaybeUninit<f32>],
+) -> (f32, f32) {
     let dim = settings.get_dimensions();
     let freq_x = S::Vf32::set1(settings.get_freq_x());
     let freq_y = S::Vf32::set1(settings.get_freq_y());
@@ -154,14 +156,14 @@ unsafe fn get_3d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     let height = dim.height;
     let start_z = dim.z;
     let depth = dim.depth;
+    assert_eq!(result.len(), width * height * depth);
 
     let mut min_s = S::Vf32::set1(f32::MAX);
     let mut max_s = S::Vf32::set1(f32::MIN);
     let mut min = f32::MAX;
     let mut max = f32::MIN;
 
-    let mut result = Vec::<f32>::with_capacity(width * height * depth);
-    let result_ptr = result.as_mut_ptr();
+    let result_ptr = result.as_mut_ptr() as *mut f32;
     let mut i = 0;
     let vector_width = S::Vf32::WIDTH;
     let remainder = width % vector_width;
@@ -203,7 +205,6 @@ unsafe fn get_3d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
         }
         z = z + S::Vf32::set1(1.0);
     }
-    result.set_len(width * height * depth);
     for i in 0..vector_width {
         if min_s[i] < min {
             min = min_s[i];
@@ -212,13 +213,14 @@ unsafe fn get_3d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
             max = max_s[i];
         }
     }
-    (result, min, max)
+    (min, max)
 }
 
 #[inline(always)]
 unsafe fn get_4d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     settings: Settings,
-) -> (Vec<f32>, f32, f32) {
+    result: &mut [MaybeUninit<f32>],
+) -> (f32, f32) {
     let dim = settings.get_dimensions();
     let freq_x = S::Vf32::set1(settings.get_freq_x());
     let freq_y = S::Vf32::set1(settings.get_freq_y());
@@ -232,14 +234,14 @@ unsafe fn get_4d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
     let depth = dim.depth;
     let start_w = dim.w;
     let time = dim.time;
+    assert_eq!(result.len(), width * height * depth * time);
 
     let mut min_s = S::Vf32::set1(f32::MAX);
     let mut max_s = S::Vf32::set1(f32::MIN);
     let mut min = f32::MAX;
     let mut max = f32::MIN;
 
-    let mut result = Vec::<f32>::with_capacity(width * height * depth * time);
-    let result_ptr = result.as_mut_ptr();
+    let result_ptr = result.as_mut_ptr() as *mut f32;
     let mut i = 0;
     let vector_width = S::Vf32::WIDTH;
     let remainder = width % vector_width;
@@ -285,7 +287,6 @@ unsafe fn get_4d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
         }
         w = w + S::Vf32::set1(1.0);
     }
-    result.set_len(width * height * depth * time);
     for i in 0..vector_width {
         if min_s[i] < min {
             min = min_s[i];
@@ -294,41 +295,43 @@ unsafe fn get_4d_noise_helper_f32<S: Simd, Settings: Sample32<S>>(
             max = max_s[i];
         }
     }
-    (result, min, max)
+    (min, max)
 }
 
 macro_rules! generate_noise_helper_dispatch {
-    ($helper_name:ident, $settings_ty:ty, $settings_name:ident) => {{
+    ($helper_name:ident, $settings_ty:ty, $settings_name:ident, $result:ident) => {{
         #[allow(non_camel_case_types)]
         {
             use simdeez::prelude::*;
             simd_runtime_generate!(
-                fn gen_noise($settings_name: &$settings_ty) -> (Vec<f32>, f32, f32) {
-                    $helper_name::<S, $settings_ty>(*$settings_name)
+                fn gen_noise($settings_name: &$settings_ty, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
+                    $helper_name::<S, $settings_ty>(*$settings_name, result)
                 }
             );
-            gen_noise($settings_name)
+            gen_noise($settings_name, $result)
         }
     }};
 }
 
 pub mod get_1d_noise {
+    use std::mem::MaybeUninit;
+
     use crate::{noise_helpers_32::get_1d_noise_helper_f32, NoiseType};
     use crate::{FbmSettings, GradientSettings, RidgeSettings, TurbulenceSettings};
     #[allow(dead_code)]
-    pub fn get_1d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+    pub fn get_1d_noise(noise_type: &NoiseType, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
         match noise_type {
             NoiseType::Fbm(s) => {
-                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, FbmSettings, s)
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, FbmSettings, s, result)
             }
             NoiseType::Ridge(s) => {
-                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, RidgeSettings, s)
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, RidgeSettings, s, result)
             }
             NoiseType::Turbulence(s) => {
-                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, TurbulenceSettings, s)
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, TurbulenceSettings, s, result)
             }
             NoiseType::Gradient(s) => {
-                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, GradientSettings, s)
+                generate_noise_helper_dispatch!(get_1d_noise_helper_f32, GradientSettings, s, result)
             }
             NoiseType::Cellular(_) => {
                 panic!("not implemented");
@@ -340,17 +343,9 @@ pub mod get_1d_noise {
     }
 }
 
-pub mod get_1d_scaled_noise {
-    use crate::shared::get_scaled_noise;
-    use crate::NoiseType;
-    use super::get_1d_noise::get_1d_noise;
-    #[allow(dead_code)]
-    pub fn get_1d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
-        unsafe { get_scaled_noise(*noise_type, get_1d_noise(noise_type)) }
-    }
-}
-
 pub mod get_2d_noise {
+    use std::mem::MaybeUninit;
+
     use crate::{noise_helpers_32::get_2d_noise_helper_f32, NoiseType};
     use crate::{
         Cellular2Settings, CellularSettings, FbmSettings, GradientSettings, RidgeSettings,
@@ -362,42 +357,33 @@ pub mod get_2d_noise {
     /// are returned so you can scale and transform the noise as you see fit
     /// in a single pass.
     #[allow(dead_code)]
-    pub fn get_2d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+    pub fn get_2d_noise(noise_type: &NoiseType, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
         match noise_type {
             NoiseType::Fbm(s) => {
-                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, FbmSettings, s)
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, FbmSettings, s, result)
             }
             NoiseType::Ridge(s) => {
-                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, RidgeSettings, s)
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, RidgeSettings, s, result)
             }
             NoiseType::Turbulence(s) => {
-                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, TurbulenceSettings, s)
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, TurbulenceSettings, s, result)
             }
             NoiseType::Gradient(s) => {
-                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, GradientSettings, s)
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, GradientSettings, s, result)
             }
             NoiseType::Cellular(s) => {
-                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, CellularSettings, s)
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, CellularSettings, s, result)
             }
             NoiseType::Cellular2(s) => {
-                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, Cellular2Settings, s)
+                generate_noise_helper_dispatch!(get_2d_noise_helper_f32, Cellular2Settings, s, result)
             }
         }
     }
 }
 
-pub mod get_2d_scaled_noise {
-    use crate::shared::get_scaled_noise;
-    use crate::NoiseType;
-    use super::get_2d_noise::get_2d_noise;
-
-    #[allow(dead_code)]
-    pub fn get_2d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
-        unsafe { get_scaled_noise(*noise_type, get_2d_noise(noise_type)) }
-    }
-}
-
 pub mod get_3d_noise {
+    use std::mem::MaybeUninit;
+
     use crate::{noise_helpers_32::get_3d_noise_helper_f32, NoiseType};
     use crate::{
         Cellular2Settings, CellularSettings, FbmSettings, GradientSettings, RidgeSettings,
@@ -409,57 +395,49 @@ pub mod get_3d_noise {
     /// are returned so you can scale and transform the noise as you see fit
     /// in a single pass.
     #[allow(dead_code)]
-    pub fn get_3d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+    pub fn get_3d_noise(noise_type: &NoiseType, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
         match noise_type {
             NoiseType::Fbm(s) => {
-                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, FbmSettings, s)
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, FbmSettings, s, result)
             }
             NoiseType::Ridge(s) => {
-                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, RidgeSettings, s)
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, RidgeSettings, s, result)
             }
             NoiseType::Turbulence(s) => {
-                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, TurbulenceSettings, s)
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, TurbulenceSettings, s, result)
             }
             NoiseType::Gradient(s) => {
-                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, GradientSettings, s)
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, GradientSettings, s, result)
             }
             NoiseType::Cellular(s) => {
-                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, CellularSettings, s)
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, CellularSettings, s, result)
             }
             NoiseType::Cellular2(s) => {
-                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, Cellular2Settings, s)
+                generate_noise_helper_dispatch!(get_3d_noise_helper_f32, Cellular2Settings, s, result)
             }
         }
     }
 }
 
-pub mod get_3d_scaled_noise {
-    use crate::shared::get_scaled_noise;
-    use crate::NoiseType;
-    use super::get_3d_noise::get_3d_noise;
-    #[allow(dead_code)]
-    pub fn get_3d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
-        unsafe { get_scaled_noise(*noise_type, get_3d_noise(noise_type)) }
-    }
-}
-
 pub mod get_4d_noise {
+    use std::mem::MaybeUninit;
+
     use crate::{noise_helpers_32::get_4d_noise_helper_f32, NoiseType};
     use crate::{FbmSettings, GradientSettings, RidgeSettings, TurbulenceSettings};
     #[allow(dead_code)]
-    pub fn get_4d_noise(noise_type: &NoiseType) -> (Vec<f32>, f32, f32) {
+    pub fn get_4d_noise(noise_type: &NoiseType, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
         match noise_type {
             NoiseType::Fbm(s) => {
-                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, FbmSettings, s)
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, FbmSettings, s, result)
             }
             NoiseType::Ridge(s) => {
-                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, RidgeSettings, s)
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, RidgeSettings, s, result)
             }
             NoiseType::Turbulence(s) => {
-                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, TurbulenceSettings, s)
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, TurbulenceSettings, s, result)
             }
             NoiseType::Gradient(s) => {
-                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, GradientSettings, s)
+                generate_noise_helper_dispatch!(get_4d_noise_helper_f32, GradientSettings, s, result)
             }
             NoiseType::Cellular(_) => {
                 panic!("not implemented");
@@ -468,15 +446,5 @@ pub mod get_4d_noise {
                 panic!("not implemented");
             }
         }
-    }
-}
-
-pub mod get_4d_scaled_noise {
-    use crate::shared::get_scaled_noise;
-    use crate::NoiseType;
-    use super::get_4d_noise::get_4d_noise;
-    #[allow(dead_code)]
-    pub fn get_4d_scaled_noise(noise_type: &NoiseType) -> Vec<f32> {
-        unsafe { get_scaled_noise(*noise_type, get_4d_noise(noise_type)) }
     }
 }

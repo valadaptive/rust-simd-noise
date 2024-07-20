@@ -1,7 +1,11 @@
+use std::mem::MaybeUninit;
+
+use crate::dimensional_being::DimensionalBeing;
 pub use crate::noise_dimensions::NoiseDimensions;
 pub use crate::noise_type::NoiseType;
+use crate::shared::{get_scaled_noise, slice_to_maybe_uninit_mut};
 
-pub trait Settings {
+pub trait Settings: DimensionalBeing + Sized {
     fn default(dim: NoiseDimensions) -> Self;
     fn with_seed(&mut self, seed: i32) -> &mut Self;
     fn with_freq(&mut self, freq: f32) -> &mut Self;
@@ -18,13 +22,33 @@ pub trait Settings {
     /// to get back a NoiseType to call the noise functions with
     fn wrap(self) -> NoiseType;
 
+
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32);
+
+    fn generate_into(self, result: &mut [f32]) -> (f32, f32) {
+        self.generate_into_maybe_uninit(slice_to_maybe_uninit_mut(result))
+    }
+
     /// Generate a chunk of noise based on your settings, and the min and max value
     /// generated, so you can scale it as you wish
-    fn generate(self) -> (Vec<f32>, f32, f32);
+    fn generate(self) -> (Vec<f32>, f32, f32) {
+        let size = self.get_dimensions().len();
+        let mut result = Vec::<f32>::with_capacity(size);
+        // Safety: we initialized the Vec with a capacity of `size` so its spare capacity must be at least that much.
+        // Unfortunately, there *is* a bounds check here otherwise, which regresses performance a lot.
+        let (min, max) = self.generate_into_maybe_uninit(
+            unsafe { result.spare_capacity_mut().get_unchecked_mut(..size) }
+        );
+        unsafe { result.set_len(size); }
+        (result, min, max)
+    }
+
     fn validate(&self);
 
     /// Generate a chunk of noise with values scaled from min to max
-    fn generate_scaled(self, min: f32, max: f32) -> Vec<f32>;
+    fn generate_scaled(self) -> Vec<f32> {
+        get_scaled_noise(self.get_dimensions(), self.generate())
+    }
 }
 
 pub trait SimplexSettings {

@@ -1,7 +1,9 @@
+use std::mem::MaybeUninit;
+
 use simdeez::prelude::*;
 
 use crate::dimensional_being::DimensionalBeing;
-use crate::{get_2d_noise, get_2d_scaled_noise, get_3d_noise, get_3d_scaled_noise};
+use crate::{get_2d_noise, get_3d_noise};
 use crate::noise::cell2_32::{cellular2_2d, cellular2_3d};
 use crate::noise::cell2_64::{cellular2_2d as cellular2_2d_f64, cellular2_3d as cellular2_3d_f64};
 pub use crate::noise::cell2_return_type::Cell2ReturnType;
@@ -101,11 +103,11 @@ impl Settings for Cellular2Settings {
         NoiseType::Cellular2(self)
     }
 
-    fn generate(self) -> (Vec<f32>, f32, f32) {
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
         let d = self.dim.dim;
         match d {
-            2 => get_2d_noise(&NoiseType::Cellular2(self)),
-            3 => get_3d_noise(&NoiseType::Cellular2(self)),
+            2 => get_2d_noise(&NoiseType::Cellular2(self), result),
+            3 => get_3d_noise(&NoiseType::Cellular2(self), result),
             _ => panic!("not implemented"),
         }
     }
@@ -113,19 +115,6 @@ impl Settings for Cellular2Settings {
     fn validate(&self) {
         if self.index0 > 2 || self.index1 > 3 || self.index0 >= self.index1 {
             panic!("invalid index settings in cellular2 noise");
-        }
-    }
-
-    fn generate_scaled(self, min: f32, max: f32) -> Vec<f32> {
-        self.validate();
-        let d = self.dim.dim;
-        let mut new_self = self;
-        new_self.dim.min = min;
-        new_self.dim.max = max;
-        match d {
-            2 => get_2d_scaled_noise(&NoiseType::Cellular2(new_self)),
-            3 => get_3d_scaled_noise(&NoiseType::Cellular2(new_self)),
-            _ => panic!("not implemented"),
         }
     }
 }
