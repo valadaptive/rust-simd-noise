@@ -13,7 +13,7 @@ categories = ["game-engines", "multimedia::images"]
 edition = "2018"
 
 [dependencies]
-simdeez = "2.0.0-dev3"
+simdeez = { git = "https://github.com/valadaptive/simdeez", rev = "91707a7" }
 
 [dev-dependencies]
 criterion = "0.4.0"
