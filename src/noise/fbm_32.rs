@@ -16,7 +16,7 @@ pub fn fbm_1d<S: Simd>(
     for _ in 1..octaves {
         x = x * lacunarity;
         amp = amp * gain;
-        result = (simplex_1d::<S>(x, seed) * amp) + result;
+        result = simplex_1d::<S>(x, seed).mul_add(amp, result);
     }
 
     result
@@ -38,7 +38,7 @@ pub fn fbm_2d<S: Simd>(
         x = x * lac;
         y = y * lac;
         amp = amp * gain;
-        result = (simplex_2d::<S>(x, y, seed) * amp) + result;
+        result = simplex_2d::<S>(x, y, seed).mul_add(amp, result);
     }
 
     result
@@ -62,7 +62,7 @@ pub fn fbm_3d<S: Simd>(
         y = y * lac;
         z = z * lac;
         amp = amp * gain;
-        result = (simplex_3d::<S>(x, y, z, seed) * amp) + result;
+        result = simplex_3d::<S>(x, y, z, seed).mul_add(amp, result);
     }
 
     result
@@ -88,7 +88,7 @@ pub fn fbm_4d<S: Simd>(
         z = z * lac;
         w = w * lac;
         amp = amp * gain;
-        result = result + (simplex_4d::<S>(x, y, z, w, seed) * amp);
+        result = simplex_4d::<S>(x, y, z, w, seed).mul_add(amp, result);
     }
 
     result
