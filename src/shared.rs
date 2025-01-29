@@ -34,18 +34,45 @@ pub unsafe fn scale_noise<S: Simd>(
 }
 
 simd_runtime_generate!(
-    fn get_scaled_noise_inner(dim: NoiseDimensions, noise: (Vec<f32>, f32, f32)) -> Vec<f32> {
-        let (mut noise, min, max) = noise;
-        scale_noise::<S>(dim.min, dim.max, min, max, &mut noise);
-        noise
+    fn get_min_max(noise: &[f32]) -> (f32, f32) {
+        let mut min_s = S::Vf32::set1(f32::MAX);
+        let mut max_s = S::Vf32::set1(f32::MIN);
+
+        let mut min = f32::MAX;
+        let mut max = f32::MIN;
+
+        let chunks = noise.chunks_exact(S::Vf32::WIDTH);
+        for sample in chunks.remainder() {
+            min = min.min(*sample);
+            max = max.max(*sample);
+        }
+        for chunk in chunks {
+            min_s = min_s.min(unsafe { S::Vf32::load_from_ptr_unaligned(chunk.as_ptr()) });
+            max_s = max_s.max(unsafe { S::Vf32::load_from_ptr_unaligned(chunk.as_ptr()) });
+        }
+        for (min_s, max_s) in min_s.iter().zip(max_s.iter()) {
+            min = min.min(min_s);
+            max = max.max(max_s);
+        }
+
+        (min, max)
+    }
+);
+
+simd_runtime_generate!(
+    fn get_scaled_noise_inner(dim: NoiseDimensions, noise: &mut Vec<f32>, bounds: (f32, f32)) {
+        let (min, max) = bounds;
+        scale_noise::<S>(dim.min, dim.max, min, max, noise);
     }
 );
 
 pub(crate) fn get_scaled_noise(
     dimensions: NoiseDimensions,
-    noise: (Vec<f32>, f32, f32),
+    mut noise: Vec<f32>,
 ) -> Vec<f32> {
-    get_scaled_noise_inner(dimensions, noise)
+    let bounds = get_min_max(&noise);
+    get_scaled_noise_inner(dimensions, &mut noise, bounds);
+    noise
 }
 
 pub(crate) fn slice_to_maybe_uninit_mut<T>(slice: &mut [T]) -> &mut [MaybeUninit<T>] {

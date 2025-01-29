@@ -23,24 +23,24 @@ pub trait Settings: DimensionalBeing + Sized {
     fn wrap(self) -> NoiseType;
 
 
-    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32);
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]);
 
-    fn generate_into(self, result: &mut [f32]) -> (f32, f32) {
+    fn generate_into(self, result: &mut [f32]) {
         self.generate_into_maybe_uninit(slice_to_maybe_uninit_mut(result))
     }
 
     /// Generate a chunk of noise based on your settings, and the min and max value
     /// generated, so you can scale it as you wish
-    fn generate(self) -> (Vec<f32>, f32, f32) {
+    fn generate(self) -> Vec<f32> {
         let size = self.get_dimensions().len();
         let mut result = Vec::<f32>::with_capacity(size);
         // Safety: we initialized the Vec with a capacity of `size` so its spare capacity must be at least that much.
         // Unfortunately, there *is* a bounds check here otherwise, which regresses performance a lot.
-        let (min, max) = self.generate_into_maybe_uninit(
+        self.generate_into_maybe_uninit(
             unsafe { result.spare_capacity_mut().get_unchecked_mut(..size) }
         );
         unsafe { result.set_len(size); }
-        (result, min, max)
+        result
     }
 
     fn validate(&self);

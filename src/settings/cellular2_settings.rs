@@ -103,7 +103,7 @@ impl Settings for Cellular2Settings {
         NoiseType::Cellular2(self)
     }
 
-    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) {
         let d = self.dim.dim;
         match d {
             2 => get_2d_noise(&NoiseType::Cellular2(self), result),

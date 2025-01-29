@@ -111,7 +111,7 @@ impl Settings for FbmSettings {
         //todo
     }
 
-    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32) {
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) {
         let d = self.dim.dim;
         match d {
             1 => get_1d_noise(&NoiseType::Fbm(self), result),

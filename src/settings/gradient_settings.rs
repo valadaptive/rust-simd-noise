@@ -106,7 +106,7 @@ impl Settings for GradientSettings {
         //todo
     }
 
-    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) -> (f32, f32) where Self: Sized {
+    fn generate_into_maybe_uninit(self, result: &mut [MaybeUninit<f32>]) {
         let d = self.dim.dim;
         match d {
             1 => get_1d_noise(&NoiseType::Gradient(self), result),
