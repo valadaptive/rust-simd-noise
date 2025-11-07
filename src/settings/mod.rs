@@ -1,4 +1,5 @@
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
+use alloc::vec::Vec;
 
 use crate::dimensional_being::DimensionalBeing;
 pub use crate::noise_dimensions::NoiseDimensions;

@@ -85,7 +85,9 @@
 //! }
 //! ```
 
-extern crate simdeez;
+#![no_std]
+extern crate alloc;
+
 mod dimensional_being;
 //pub mod intrinsics;
 pub mod noise;

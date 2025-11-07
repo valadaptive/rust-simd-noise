@@ -1,10 +1,11 @@
 use crate::dimensional_being::DimensionalBeing;
 use crate::Settings;
 
+use alloc::vec::Vec;
 use simdeez::prelude::*;
 
-use std::f32;
-use std::mem::MaybeUninit;
+use core::f32;
+use core::mem::MaybeUninit;
 
 pub trait Sample32<S: Simd>: DimensionalBeing + Settings {
     fn sample_1d(&self, x: S::Vf32) -> S::Vf32;
@@ -225,7 +226,7 @@ macro_rules! generate_noise_helper_dispatch {
 }
 
 pub mod get_1d_noise {
-    use std::mem::MaybeUninit;
+    use core::mem::MaybeUninit;
 
     use crate::{noise_helpers_32::get_1d_noise_helper_f32, NoiseType};
     use crate::{FbmSettings, GradientSettings, RidgeSettings, TurbulenceSettings};
@@ -255,7 +256,7 @@ pub mod get_1d_noise {
 }
 
 pub mod get_2d_noise {
-    use std::mem::MaybeUninit;
+    use core::mem::MaybeUninit;
 
     use crate::{noise_helpers_32::get_2d_noise_helper_f32, NoiseType};
     use crate::{
@@ -293,7 +294,7 @@ pub mod get_2d_noise {
 }
 
 pub mod get_3d_noise {
-    use std::mem::MaybeUninit;
+    use core::mem::MaybeUninit;
 
     use crate::{noise_helpers_32::get_3d_noise_helper_f32, NoiseType};
     use crate::{
@@ -331,7 +332,7 @@ pub mod get_3d_noise {
 }
 
 pub mod get_4d_noise {
-    use std::mem::MaybeUninit;
+    use core::mem::MaybeUninit;
 
     use crate::{noise_helpers_32::get_4d_noise_helper_f32, NoiseType};
     use crate::{FbmSettings, GradientSettings, RidgeSettings, TurbulenceSettings};

@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use simdeez::prelude::*;
 
 use super::NoiseType;
@@ -8,7 +9,7 @@ use crate::{
     TurbulenceSettings,
 };
 
-use std::f64;
+use core::f64;
 
 pub trait Sample64<S: Simd>: DimensionalBeing + Settings {
     fn sample_1d(&self, x: S::Vf64) -> S::Vf64;

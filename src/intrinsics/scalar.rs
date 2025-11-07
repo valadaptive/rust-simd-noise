@@ -20,7 +20,7 @@ use crate::shared::scale_noise;
 
 use simdeez::{SimdTransmuteF32, SimdTransmuteF64};
 
-use std::f32;
+use core::f32;
 
 cellular!(
     "2d",

@@ -1,5 +1,6 @@
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 
+use alloc::vec::Vec;
 use simdeez::prelude::*;
 
 use crate::NoiseDimensions;
@@ -77,5 +78,5 @@ pub(crate) fn get_scaled_noise(
 
 pub(crate) fn slice_to_maybe_uninit_mut<T>(slice: &mut [T]) -> &mut [MaybeUninit<T>] {
     // Safety: we know these are all initialized, so it's fine to transmute into a type that makes fewer assumptions
-    unsafe { std::mem::transmute(slice) }
+    unsafe { core::mem::transmute(slice) }
 }

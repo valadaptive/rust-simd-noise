@@ -13,11 +13,17 @@ categories = ["game-engines", "multimedia::images"]
 edition = "2018"
 
 [dependencies]
-simdeez = { git = "https://github.com/valadaptive/simdeez", rev = "132cb8e" }
+simdeez = { git = "https://github.com/valadaptive/simdeez", branch = "no-std", default-features = false }
 
 [dev-dependencies]
 criterion = "0.4.0"
 byteorder = "1.4.3"
+
+[features]
+default = ["std"]
+std = ["simdeez/std"]
+libm = ["simdeez/libm"]
+core_detect = ["simdeez/core_detect"]
 
 [[bench]]
 name = "benchmarks"

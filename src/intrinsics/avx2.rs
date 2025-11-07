@@ -30,7 +30,7 @@ use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
-use std::f32;
+use core::f32;
 
 cellular!(
     "2d",
